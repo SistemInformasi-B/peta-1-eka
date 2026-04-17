@@ -1,0 +1,1517 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <!-- External Stylesheets -->
+    <link rel="stylesheet" href="./resources/ol.css">
+    <link rel="stylesheet" href="resources/fontawesome-all.min.css">
+    <link href="resources/photon-geocoder-autocomplete.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./resources/ol-layerswitcher.css">
+    <link rel="stylesheet" href="./resources/qgis2web.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+    /* ============================================
+       VARIABLES & RESET
+       ============================================ */
+    :root {
+        --color-primary: #0066cc;
+        --color-primary-dark: #0052a3;
+        --color-primary-light: #e6f2ff;
+        --color-secondary: #00d4ff;
+        --color-accent: #ff6b35;
+        --color-success: #00c853;
+        --color-warning: #ffa500;
+        --color-danger: #ff3333;
+        
+        --color-bg: #f8f9fb;
+        --color-surface: #ffffff;
+        --color-surface-hover: #f5f7fa;
+        --color-border: #e0e6ed;
+        --color-text: #1a1a2e;
+        --color-text-secondary: #6b7280;
+        
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+        --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+        --shadow-lg: 0 12px 24px rgba(0, 102, 204, 0.15);
+        --shadow-glass: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.1);
+        
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        
+        --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: 'Space Grotesk', sans-serif;
+        background-color: var(--color-bg);
+        color: var(--color-text);
+    }
+
+    /* ============================================
+       LAYOUT CONTAINER
+       ============================================ */
+    body {
+        display: flex;
+        flex-direction: row;
+    }
+
+    #app-container {
+        display: flex;
+        width: 100%;
+        height: 100vh;
+        position: relative;
+    }
+
+    /* ============================================
+       SIDEBAR PANEL
+       ============================================ */
+    #sidebar {
+        width: 320px;
+        height: 100vh;
+        background: var(--color-surface);
+        border-right: 1px solid var(--color-border);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        z-index: 100;
+        transition: var(--transition);
+    }
+
+    #sidebar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #sidebar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #sidebar::-webkit-scrollbar-thumb {
+        background: var(--color-border);
+        border-radius: 3px;
+    }
+
+    #sidebar::-webkit-scrollbar-thumb:hover {
+        background: var(--color-text-secondary);
+    }
+
+    /* Logo & Title */
+    .sidebar-header {
+        margin-bottom: 28px;
+    }
+
+    .logo-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+        border-radius: var(--radius-md);
+        color: white;
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        box-shadow: var(--shadow-md);
+    }
+
+    .sidebar-header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--color-text);
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
+    }
+
+    .sidebar-header p {
+        font-size: 13px;
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    /* Section Title */
+    .sidebar-section-title {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--color-text-secondary);
+        margin-top: 24px;
+        margin-bottom: 12px;
+    }
+
+    /* Stats Container */
+    .stats-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, var(--color-primary-light), rgba(230, 242, 255, 0.5));
+        border: 1px solid rgba(0, 102, 204, 0.2);
+        padding: 12px;
+        border-radius: var(--radius-md);
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }
+
+    .stat-card .number {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--color-primary);
+        display: block;
+    }
+
+    .stat-card .label {
+        font-size: 11px;
+        color: var(--color-text-secondary);
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Location Info */
+    .location-info {
+        background: var(--color-surface-hover);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 12px;
+        margin-bottom: 20px;
+        font-size: 12px;
+    }
+
+    .location-info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        color: var(--color-text-secondary);
+    }
+
+    .location-info-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .location-info-value {
+        font-weight: 600;
+        color: var(--color-primary);
+    }
+
+    /* Guide Section */
+    .guide-section {
+        background: linear-gradient(135deg, rgba(0, 102, 204, 0.05), rgba(0, 212, 255, 0.05));
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 12px;
+        margin-bottom: 20px;
+    }
+
+    .guide-section h3 {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--color-primary);
+    }
+
+    .guide-item {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-size: 12px;
+        color: var(--color-text-secondary);
+    }
+
+    .guide-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .guide-item .icon {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-primary);
+        font-size: 11px;
+    }
+
+    /* POI Category List */
+    .poi-categories {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .poi-category {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        background: var(--color-surface-hover);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: var(--transition);
+        font-size: 13px;
+        color: var(--color-text);
+    }
+
+    .poi-category:hover {
+        background: var(--color-primary-light);
+        border-color: var(--color-primary);
+        transform: translateX(4px);
+    }
+
+    .poi-category .icon {
+        font-size: 16px;
+        width: 24px;
+        color: var(--color-primary);
+        text-align: center;
+    }
+
+    .poi-category .count {
+        margin-left: auto;
+        font-size: 11px;
+        background: var(--color-primary);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+
+    /* ============================================
+       MAP CONTAINER
+       ============================================ */
+    #map-container {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+    }
+
+    #map {
+        width: 100%;
+        height: 100%;
+    }
+
+    /* ============================================
+       OPENLAYERS CUSTOM STYLING
+       ============================================ */
+    .ol-control {
+        background-color: rgba(255, 255, 255, 0.85) !important;
+        padding: 6px !important;
+        border-radius: var(--radius-md) !important;
+        box-shadow: var(--shadow-md) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid var(--color-border) !important;
+    }
+
+    .ol-control > * {
+        background-color: transparent !important;
+        color: var(--color-text) !important;
+        border-radius: 0px !important;
+        border: none !important;
+    }
+
+    .ol-control > *:focus,
+    .ol-control > *:hover {
+        background-color: var(--color-primary-light) !important;
+        color: var(--color-primary-dark) !important;
+    }
+
+    .ol-attribution a {
+        color: var(--color-primary) !important;
+    }
+
+    /* ============================================
+       CUSTOM POP-UP
+       ============================================ */
+    .ol-popup {
+        position: absolute;
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        padding: 16px;
+        bottom: 12px;
+        left: -50px;
+        min-width: 320px;
+        max-width: 420px;
+        max-height: 600px;
+        overflow-y: auto;
+        backdrop-filter: blur(10px);
+        animation: popupSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes popupSlideUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .ol-popup::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .ol-popup::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .ol-popup::-webkit-scrollbar-thumb {
+        background: var(--color-border);
+        border-radius: 3px;
+    }
+
+    .ol-popup-closer {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        cursor: pointer;
+        width: 28px;
+        height: 28px;
+        background: var(--color-surface-hover);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-text);
+        transition: var(--transition);
+        border: none;
+        font-size: 16px;
+    }
+
+    .ol-popup-closer:hover {
+        background: var(--color-danger);
+        color: white;
+    }
+
+    .ol-popup-closer::after {
+        content: "✕";
+        font-weight: bold;
+    }
+
+    #popup-content {
+        padding-right: 6px;
+    }
+
+    /* ============================================
+       POP-UP CONTENT STYLING
+       ============================================ */
+    .popup-location-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--color-border);
+    }
+
+    .popup-location-icon {
+        font-size: 28px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--color-primary-light);
+        border-radius: var(--radius-md);
+        color: var(--color-primary);
+    }
+
+    .popup-location-name {
+        flex: 1;
+    }
+
+    .popup-location-name h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--color-text);
+        margin-bottom: 2px;
+    }
+
+    .popup-location-category {
+        font-size: 12px;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .popup-distance-section,
+    .popup-eta-section,
+    .popup-actions-section {
+        margin-bottom: 16px;
+    }
+
+    .popup-distance-section:last-child,
+    .popup-eta-section:last-child,
+    .popup-actions-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .popup-section-title {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--color-text-secondary);
+        margin-bottom: 8px;
+    }
+
+    .distance-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--color-primary);
+        display: inline-block;
+    }
+
+    .eta-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+    }
+
+    .eta-card {
+        background: var(--color-surface-hover);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 12px;
+        text-align: center;
+        transition: var(--transition);
+    }
+
+    .eta-card:hover {
+        border-color: var(--color-primary);
+        background: var(--color-primary-light);
+    }
+
+    .eta-card .mode-icon {
+        font-size: 20px;
+        margin-bottom: 6px;
+    }
+
+    .eta-card .mode-label {
+        font-size: 11px;
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .eta-card .eta-value {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--color-primary);
+    }
+
+    .button-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .btn {
+        padding: 10px 14px;
+        border: none;
+        border-radius: var(--radius-md);
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: var(--color-primary);
+        color: white;
+        width: 100%;
+        grid-column: 1 / -1;
+    }
+
+    .btn-primary:hover {
+        background: var(--color-primary-dark);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+        background: var(--color-surface-hover);
+        color: var(--color-primary);
+        border: 1px solid var(--color-border);
+    }
+
+    .btn-secondary:hover {
+        background: var(--color-primary-light);
+        border-color: var(--color-primary);
+    }
+
+    /* ============================================
+       GPS TRACKING INDICATOR
+       ============================================ */
+    .gps-indicator {
+        position: absolute;
+        bottom: 24px;
+        right: 24px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 12px 14px;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--color-text-secondary);
+        backdrop-filter: blur(10px);
+        z-index: 90;
+        animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .gps-indicator.active {
+        color: var(--color-success);
+        border-color: var(--color-success);
+    }
+
+    .gps-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--color-text-secondary);
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .gps-indicator.active .gps-dot {
+        background: var(--color-success);
+    }
+
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(0, 200, 83, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(0, 200, 83, 0);
+        }
+    }
+
+    /* ============================================
+       RESPONSIVE DESIGN
+       ============================================ */
+    @media (max-width: 1024px) {
+        #sidebar {
+            width: 280px;
+            padding: 20px;
+        }
+
+        .ole-popup {
+            min-width: 280px;
+            max-width: 360px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        body {
+            flex-direction: column;
+        }
+
+        #sidebar {
+            width: 100%;
+            height: auto;
+            max-height: 40vh;
+            border-right: none;
+            border-bottom: 1px solid var(--color-border);
+            order: 2;
+        }
+
+        #map-container {
+            height: 60vh;
+            order: 1;
+        }
+
+        .sidebar-section-title {
+            margin-top: 16px;
+        }
+
+        .stats-container {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .guide-section {
+            display: none;
+        }
+
+        .ol-popup {
+            min-width: 260px;
+            max-width: 320px;
+            left: -40px;
+        }
+
+        .button-container {
+            grid-template-columns: 1fr;
+        }
+
+        .btn-primary {
+            grid-column: 1;
+        }
+    }
+
+    @media (max-width: 480px) {
+        #sidebar {
+            max-height: 35vh;
+            padding: 16px;
+        }
+
+        #map-container {
+            height: 65vh;
+        }
+
+        .sidebar-header h1 {
+            font-size: 20px;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+        }
+
+        .stats-container {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .poi-categories {
+            display: none;
+        }
+
+        .ol-popup {
+            min-width: 240px;
+            max-width: 280px;
+            left: -30px;
+            padding: 12px;
+        }
+
+        .popup-location-name h3 {
+            font-size: 14px;
+        }
+
+        .distance-value {
+            font-size: 18px;
+        }
+
+        .eta-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ============================================
+       LOADING STATE
+       ============================================ */
+    .skeleton-loading {
+        background: linear-gradient(90deg, var(--color-surface-hover) 25%, var(--color-border) 50%, var(--color-surface-hover) 75%);
+        background-size: 200% 100%;
+        animation: loading 2s infinite;
+    }
+
+    @keyframes loading {
+        0% {
+            background-position: 200% 0;
+        }
+        100% {
+            background-position: -200% 0;
+        }
+    }
+    </style>
+
+    <title>WebGIS Mapanget - Sistem Informasi Geografis Interaktif</title>
+</head>
+<body>
+    <div id="app-container">
+        <!-- SIDEBAR PANEL -->
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon">🗺️</div>
+                <h1>MapanGIS</h1>
+                <p>Sistem Informasi Geografis Wilayah Mapanget yang modern dan interaktif.</p>
+            </div>
+
+            <!-- Stats Section -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                <div class="stat-card">
+                    <span class="number" id="stat-poi-count">24</span>
+                    <span class="label">Lokasi</span>
+                </div>
+                <div class="stat-card">
+                    <span class="number" id="stat-user-dist">—</span>
+                    <span class="label">Jarak Anda</span>
+                </div>
+            </div>
+
+            <!-- Current Location Info -->
+            <div class="sidebar-section-title">📍 Lokasi Anda Saat Ini</div>
+            <div class="location-info">
+                <div class="location-info-row">
+                    <span>Latitude:</span>
+                    <span class="location-info-value" id="user-lat">—</span>
+                </div>
+                <div class="location-info-row">
+                    <span>Longitude:</span>
+                    <span class="location-info-value" id="user-lng">—</span>
+                </div>
+                <div class="location-info-row">
+                    <span>Akurasi:</span>
+                    <span class="location-info-value" id="user-accuracy">—</span>
+                </div>
+            </div>
+
+            <!-- Panduan Penggunaan -->
+            <div class="guide-section">
+                <h3>📖 Panduan Penggunaan</h3>
+                <div class="guide-item">
+                    <div class="icon">1</div>
+                    <div>Klik marker untuk melihat detail lokasi</div>
+                </div>
+                <div class="guide-item">
+                    <div class="icon">2</div>
+                    <div>Lihat jarak dan estimasi waktu tempuh</div>
+                </div>
+                <div class="guide-item">
+                    <div class="icon">3</div>
+                    <div>Buka rute di Google Maps untuk navigasi</div>
+                </div>
+                <div class="guide-item">
+                    <div class="icon">4</div>
+                    <div>Pesan lokasi ditampilkan otomatis saat login</div>
+                </div>
+            </div>
+
+            <!-- POI Categories -->
+            <div class="sidebar-section-title">🏷️ Kategori Lokasi</div>
+            <div class="poi-categories">
+                <div class="poi-category" data-category="church">
+                    <span class="icon">⛪</span>
+                    <span>Gereja</span>
+                    <span class="count">2</span>
+                </div>
+                <div class="poi-category" data-category="mosque">
+                    <span class="icon">🕌</span>
+                    <span>Masjid</span>
+                    <span class="count">3</span>
+                </div>
+                <div class="poi-category" data-category="school">
+                    <span class="icon">🏫</span>
+                    <span>Sekolah</span>
+                    <span class="count">5</span>
+                </div>
+                <div class="poi-category" data-category="restaurant">
+                    <span class="icon">🍽️</span>
+                    <span>Restoran</span>
+                    <span class="count">4</span>
+                </div>
+                <div class="poi-category" data-category="cafe">
+                    <span class="icon">☕</span>
+                    <span>Cafe</span>
+                    <span class="count">3</span>
+                </div>
+                <div class="poi-category" data-category="kos">
+                    <span class="icon">🏠</span>
+                    <span>Kos-kosan</span>
+                    <span class="count">2</span>
+                </div>
+                <div class="poi-category" data-category="hotel">
+                    <span class="icon">🏨</span>
+                    <span>Hotel</span>
+                    <span class="count">2</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAP CONTAINER -->
+        <div id="map-container">
+            <div id="map">
+                <div id="popup" class="ol-popup">
+                    <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+                    <div id="popup-content"></div>
+                </div>
+            </div>
+            <div class="gps-indicator" id="gps-indicator">
+                <div class="gps-dot"></div>
+                <span id="gps-status">Menunggu GPS...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS - JANGAN UBAH URUTAN -->
+    <script src="resources/qgis2web_expressions.js"></script>
+    <script src="./resources/functions.js"></script>
+    <script src="./resources/ol.js"></script>
+    <script src="./resources/ol-layerswitcher.js"></script>
+    <script src="resources/photon-geocoder-autocomplete.min.js"></script>
+    <script src="layers/Batas_Wilayah_KelurahanDesa_10K_AR_1.js"></script>
+    <script src="styles/Batas_Wilayah_KelurahanDesa_10K_AR_1_style.js"></script>
+    <script src="./layers/layers.js" type="text/javascript"></script>
+    <script src="./resources/Autolinker.min.js"></script>
+    <script src="./resources/qgis2web.js"></script>
+
+    <!-- CUSTOM SCRIPTS -->
+    <script>
+    // ============================================
+    // MOCK DATA - POINT OF INTEREST
+    // ============================================
+    const POI_DATA = [
+        // Gereja
+        {
+            id: 'church-1',
+            name: 'Gereja Katedral Manado',
+            category: 'church',
+            icon: '⛪',
+            lat: 1.4840,
+            lng: 124.8321,
+            address: 'Jl. Sam Ratulangi, Manado',
+            description: 'Gereja Katedral dengan arsitektur megah'
+        },
+        {
+            id: 'church-2',
+            name: 'Gereja Protestan Indonesia',
+            category: 'church',
+            icon: '⛪',
+            lat: 1.4788,
+            lng: 124.8245,
+            address: 'Jl. 17 Agustus, Manado',
+            description: 'Gereja tradisional dengan sejarah panjang'
+        },
+        // Masjid
+        {
+            id: 'mosque-1',
+            name: 'Masjid Raya Manado',
+            category: 'mosque',
+            icon: '🕌',
+            lat: 1.4850,
+            lng: 124.8400,
+            address: 'Jl. Sudirman, Manado',
+            description: 'Masjid besar dengan fasilitas lengkap'
+        },
+        {
+            id: 'mosque-2',
+            name: 'Masjid Nurul Islam',
+            category: 'mosque',
+            icon: '🕌',
+            lat: 1.4900,
+            lng: 124.8350,
+            address: 'Jl. Dr. Sam Ratulangi, Manado',
+            description: 'Masjid dengan layanan pendidikan Quran'
+        },
+        {
+            id: 'mosque-3',
+            name: 'Masjid Al-Markaz',
+            category: 'mosque',
+            icon: '🕌',
+            lat: 1.4750,
+            lng: 124.8280,
+            address: 'Jl. Merdeka, Mapanget',
+            description: 'Masjid komunitas dengan kegiatan rutin'
+        },
+        // Sekolah
+        {
+            id: 'school-1',
+            name: 'SD Negeri Mapanget 1',
+            category: 'school',
+            icon: '🏫',
+            lat: 1.4720,
+            lng: 124.8200,
+            address: 'Jl. Pendidikan No. 1, Mapanget',
+            description: 'Sekolah Dasar dengan fasilitas modern'
+        },
+        {
+            id: 'school-2',
+            name: 'SMP Negeri 5 Mapanget',
+            category: 'school',
+            icon: '🏫',
+            lat: 1.4760,
+            lng: 124.8320,
+            address: 'Jl. Pendidikan No. 45, Mapanget',
+            description: 'Sekolah Menengah Pertama terakreditasi'
+        },
+        {
+            id: 'school-3',
+            name: 'SMA Negeri 2 Manado',
+            category: 'school',
+            icon: '🏫',
+            lat: 1.4810,
+            lng: 124.8380,
+            address: 'Jl. Gereja No. 67, Manado',
+            description: 'Sekolah Menengah Atas favorit'
+        },
+        {
+            id: 'school-4',
+            name: 'SMK Negeri 1 Manado',
+            category: 'school',
+            icon: '🏫',
+            lat: 1.4950,
+            lng: 124.8450,
+            address: 'Jl. Industri, Manado',
+            description: 'Sekolah Menengah Kejuruan dengan program unggulan'
+        },
+        {
+            id: 'school-5',
+            name: 'Universitas Negeri Manado',
+            category: 'school',
+            icon: '🏫',
+            lat: 1.5050,
+            lng: 124.8550,
+            address: 'Jl. Kampus, Tondano',
+            description: 'Universitas terkemuka di Sulut'
+        },
+        // Restoran
+        {
+            id: 'restaurant-1',
+            name: 'RM Prampatan Lestari',
+            category: 'restaurant',
+            icon: '🍽️',
+            lat: 1.4820,
+            lng: 124.8310,
+            address: 'Jl. Piere Tendean, Manado',
+            description: 'Restoran masakan Manado autentik, terkenal dengan tinutuan'
+        },
+        {
+            id: 'restaurant-2',
+            name: 'Warung Mak Noni',
+            category: 'restaurant',
+            icon: '🍽️',
+            lat: 1.4850,
+            lng: 124.8270,
+            address: 'Jl. Pattimura, Manado',
+            description: 'Rumah makan tradisional dengan resep turun-temurun'
+        },
+        {
+            id: 'restaurant-3',
+            name: 'Kedai Rasa Nusantara',
+            category: 'restaurant',
+            icon: '🍽️',
+            lat: 1.4790,
+            lng: 124.8350,
+            address: 'Jl. Sudirman, Mapanget',
+            description: 'Restoran menu bervariasi dengan harga terjangkau'
+        },
+        {
+            id: 'restaurant-4',
+            name: 'Seafood Paradise',
+            category: 'restaurant',
+            icon: '🍽️',
+            lat: 1.4880,
+            lng: 124.8400,
+            address: 'Jl. Tongkang, Manado',
+            description: 'Restoran seafood premium dengan pemandangan laut'
+        },
+        // Cafe
+        {
+            id: 'cafe-1',
+            name: 'Coffee Lovers Mapanget',
+            category: 'cafe',
+            icon: '☕',
+            lat: 1.4750,
+            lng: 124.8250,
+            address: 'Jl. Merdeka, Mapanget',
+            description: 'Kafe dengan specialty coffee dan suasana nyaman'
+        },
+        {
+            id: 'cafe-2',
+            name: 'Bean Town Cafe',
+            category: 'cafe',
+            icon: '☕',
+            lat: 1.4830,
+            lng: 124.8380,
+            address: 'Jl. Gereja, Manado',
+            description: 'Kafe modern dengan barista profesional'
+        },
+        {
+            id: 'cafe-3',
+            name: 'Brewed & Roasted',
+            category: 'cafe',
+            icon: '☕',
+            lat: 1.4910,
+            lng: 124.8320,
+            address: 'Jl. Balai Kota, Manado',
+            description: 'Kafe artisan dengan roasting sendiri'
+        },
+        // Kos-kosan
+        {
+            id: 'kos-1',
+            name: 'Kos Putri Mapanget',
+            category: 'kos',
+            icon: '🏠',
+            lat: 1.4770,
+            lng: 124.8290,
+            address: 'Jl. Mapanget Raya, Mapanget',
+            description: 'Kos putri dengan kamar AC dan WiFi'
+        },
+        {
+            id: 'kos-2',
+            name: 'Kos Mahasiswa Amanah',
+            category: 'kos',
+            icon: '🏠',
+            lat: 1.4920,
+            lng: 124.8360,
+            address: 'Jl. Ksatrian, Manado',
+            description: 'Kos terjangkau untuk mahasiswa'
+        },
+        // Hotel
+        {
+            id: 'hotel-1',
+            name: 'Whiz Prime Hotel Manado',
+            category: 'hotel',
+            icon: '🏨',
+            lat: 1.4860,
+            lng: 124.8430,
+            address: 'Jl. Evaluasi, Manado',
+            description: 'Hotel bintang 4 dengan fasilitas modern'
+        },
+        {
+            id: 'hotel-2',
+            name: 'New Grand Hotel',
+            category: 'hotel',
+            icon: '🏨',
+            lat: 1.4880,
+            lng: 124.8280,
+            address: 'Jl. Piere Tendean, Manado',
+            description: 'Hotel historis dengan pelayanan prima'
+        }
+    ];
+
+    // ============================================
+    // GLOBAL VARIABLES
+    // ============================================
+    let userLocation = null;
+    let userAccuracy = null;
+    let map = null;
+    let geolocation = null;
+    let poiLayer = null;
+    let userPositionFeature = null;
+
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+    
+    /**
+     * Hitung jarak antara dua koordinat menggunakan Haversine Formula
+     */
+    function calculateDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371; // Radius bumi dalam km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    /**
+     * Hitung ETA berdasarkan moda transportasi
+     * Walking: 5 km/h
+     * Motor: 40 km/h
+     * Car: 60 km/h
+     */
+    function calculateETA(distanceKm, mode = 'walking') {
+        const speeds = {
+            walking: 5,    // km/h
+            motor: 40,     // km/h
+            car: 60        // km/h
+        };
+        const speedKmh = speeds[mode] || 5;
+        const timeHours = distanceKm / speedKmh;
+        const timeMinutes = Math.round(timeHours * 60);
+        
+        if (timeMinutes < 60) {
+            return `${timeMinutes} min`;
+        } else {
+            const hours = Math.floor(timeMinutes / 60);
+            const mins = timeMinutes % 60;
+            return `${hours}h ${mins}m`;
+        }
+    }
+
+    /**
+     * Buat HTML untuk popup
+     */
+    function createPopupContent(poi, distance, userLat, userLng) {
+        const eta = {
+            walking: calculateETA(distance, 'walking'),
+            motor: calculateETA(distance, 'motor'),
+            car: calculateETA(distance, 'car')
+        };
+
+        const googleMapsUrl = `https://www.google.com/maps/dir/${userLat},${userLng}/${poi.lat},${poi.lng}`;
+
+        const html = `
+            <div class="popup-location-header">
+                <div class="popup-location-icon">${poi.icon}</div>
+                <div class="popup-location-name">
+                    <h3>${poi.name}</h3>
+                    <div class="popup-location-category">${poi.category}</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px; font-size: 13px; color: #6b7280;">
+                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                    <span style="font-size: 14px;">📍</span>
+                    <span>${poi.address}</span>
+                </div>
+                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e0e6ed; color: #666;">
+                    ${poi.description}
+                </div>
+            </div>
+
+            <div class="popup-distance-section">
+                <div class="popup-section-title">Jarak dari Lokasi Anda</div>
+                <div><span class="distance-value">${distance.toFixed(2)} km</span></div>
+            </div>
+
+            <div class="popup-eta-section">
+                <div class="popup-section-title">Estimasi Waktu Tempuh</div>
+                <div class="eta-grid">
+                    <div class="eta-card">
+                        <div class="mode-icon">🚶</div>
+                        <div class="mode-label">Jalan Kaki</div>
+                        <div class="eta-value">${eta.walking}</div>
+                    </div>
+                    <div class="eta-card">
+                        <div class="mode-icon">🏍️</div>
+                        <div class="mode-label">Motor</div>
+                        <div class="eta-value">${eta.motor}</div>
+                    </div>
+                    <div class="eta-card">
+                        <div class="mode-icon">🚗</div>
+                        <div class="mode-label">Mobil</div>
+                        <div class="eta-value">${eta.car}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="popup-actions-section">
+                <a href="${googleMapsUrl}" target="_blank" class="btn btn-primary">
+                    <span>🗺️</span> Buka di Google Maps
+                </a>
+            </div>
+        `;
+
+        return html;
+    }
+
+    /**
+     * Update sidebar dengan informasi lokasi user
+     */
+    function updateSidebarLocation() {
+        if (userLocation) {
+            document.getElementById('user-lat').textContent = userLocation.latitude.toFixed(6);
+            document.getElementById('user-lng').textContent = userLocation.longitude.toFixed(6);
+            document.getElementById('user-accuracy').textContent = 
+                userAccuracy ? `${userAccuracy.toFixed(0)} m` : '—';
+        }
+    }
+
+    /**
+     * Update sidebar dengan jarak ke lokasi terdekat
+     */
+    function updateNearestDistance() {
+        if (!userLocation || !POI_DATA.length) return;
+
+        let minDistance = Infinity;
+        POI_DATA.forEach(poi => {
+            const dist = calculateDistance(userLocation.latitude, userLocation.longitude, poi.lat, poi.lng);
+            if (dist < minDistance) minDistance = dist;
+        });
+
+        if (minDistance !== Infinity) {
+            document.getElementById('stat-user-dist').textContent = minDistance.toFixed(2) + ' km';
+        }
+    }
+
+    // ============================================
+    // INITIALIZE MAP & LAYERS
+    // ============================================
+    function initializeMap() {
+        // Tunggu hingga map dari qgis2web sudah siap
+        if (typeof map === 'undefined' || !map) {
+            setTimeout(initializeMap, 100);
+            return;
+        }
+
+        console.log('Map initialized:', map);
+
+        // Buat vector layer untuk POI
+        poiLayer = new ol.layer.Vector({
+            source: new ol.source.Vector(),
+            name: 'Point of Interest',
+            zIndex: 50
+        });
+        map.addLayer(poiLayer);
+
+        // Tambahkan POI ke map
+        addPOIMarkers();
+
+        // Setup geolocation
+        setupGeolocation();
+
+        // Setup click handler untuk popup
+        setupPopupHandler();
+    }
+
+    /**
+     * Tambahkan marker POI ke map
+     */
+    function addPOIMarkers() {
+        const source = poiLayer.getSource();
+        
+        POI_DATA.forEach(poi => {
+            const feature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([poi.lng, poi.lat])),
+                name: poi.name,
+                category: poi.category,
+                icon: poi.icon,
+                address: poi.address,
+                description: poi.description,
+                poiLat: poi.lat,
+                poiLng: poi.lng
+            });
+
+            // Style untuk marker
+            const iconStyle = new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 8,
+                    fill: new ol.style.Fill({ color: '#0066cc' }),
+                    stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
+                }),
+                text: new ol.style.Text({
+                    text: poi.icon,
+                    font: '16px "Space Grotesk"',
+                    offsetY: -12
+                })
+            });
+
+            feature.setStyle(iconStyle);
+            source.addFeature(feature);
+        });
+    }
+
+    /**
+     * Setup real-time geolocation
+     */
+    function setupGeolocation() {
+        geolocation = new ol.Geolocation({ projection: map.getView().getProjection() });
+
+        geolocation.on('change', function() {
+            userLocation = {
+                latitude: geolocation.getPosition()[1],
+                longitude: geolocation.getPosition()[0]
+            };
+            userAccuracy = geolocation.getAccuracy();
+
+            updateSidebarLocation();
+            updateNearestDistance();
+            updateUserPosition();
+
+            // Update GPS indicator
+            const indicator = document.getElementById('gps-indicator');
+            indicator.classList.add('active');
+            document.getElementById('gps-status').textContent = 'GPS Aktif';
+        });
+
+        geolocation.on('error', function(error) {
+            console.error('Geolocation error:', error.message);
+            document.getElementById('gps-status').textContent = 'GPS Error: ' + error.message;
+        });
+
+        // Mulai tracking
+        geolocation.setTracking(true);
+    }
+
+    /**
+     * Update posisi user di map dengan animasi pulse
+     */
+    function updateUserPosition() {
+        if (!userLocation) return;
+
+        const source = poiLayer.getSource();
+        
+        if (!userPositionFeature) {
+            userPositionFeature = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat([userLocation.longitude, userLocation.latitude])),
+                name: 'Posisi Anda'
+            });
+
+            // Style untuk user position dengan pulse animation
+            const userStyle = new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 6,
+                    fill: new ol.style.Fill({ color: '#00c853' }),
+                    stroke: new ol.style.Stroke({ color: '#ffffff', width: 3 })
+                })
+            });
+
+            userPositionFeature.setStyle(userStyle);
+            source.addFeature(userPositionFeature);
+        } else {
+            userPositionFeature.setGeometry(
+                new ol.geom.Point(ol.proj.fromLonLat([userLocation.longitude, userLocation.latitude]))
+            );
+        }
+
+        // Auto-center ke user position
+        const view = map.getView();
+        view.animate({
+            center: ol.proj.fromLonLat([userLocation.longitude, userLocation.latitude]),
+            zoom: 15,
+            duration: 1000
+        });
+    }
+
+    /**
+     * Setup popup handler untuk klik pada features
+     */
+    function setupPopupHandler() {
+        const popup = document.getElementById('popup');
+        const popupContent = document.getElementById('popup-content');
+        const popupCloser = document.getElementById('popup-closer');
+        let selectedFeature = null;
+
+        function closePopup() {
+            popup.style.display = 'none';
+            popupCloser.blur();
+        }
+
+        popupCloser.onclick = function() {
+            closePopup();
+            return false;
+        };
+
+        map.on('click', function(evt) {
+            const feature = map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+                return feature;
+            });
+
+            if (feature && feature.get('poiLat')) {
+                selectedFeature = feature;
+                const coordinate = evt.coordinate;
+
+                const poiLat = feature.get('poiLat');
+                const poiLng = feature.get('poiLng');
+                const name = feature.get('name');
+                const category = feature.get('category');
+                const icon = feature.get('icon');
+                const address = feature.get('address');
+                const description = feature.get('description');
+
+                // Hitung jarak
+                if (userLocation) {
+                    const distance = calculateDistance(
+                        userLocation.latitude,
+                        userLocation.longitude,
+                        poiLat,
+                        poiLng
+                    );
+
+                    const poi = { name, category, icon, address, description, lat: poiLat, lng: poiLng };
+                    popupContent.innerHTML = createPopupContent(poi, distance, userLocation.latitude, userLocation.longitude);
+                } else {
+                    popupContent.innerHTML = `
+                        <h3>${name}</h3>
+                        <p>${address}</p>
+                        <p style="color: #ff6b35; margin-top: 12px;">
+                            ⚠️ Aktifkan GPS untuk melihat jarak dan ETA
+                        </p>
+                    `;
+                }
+
+                popup.style.display = 'block';
+                const popupOffset = popup.offsetWidth / 2;
+                popup.style.left = (coordinate[0] - popupOffset) + 'px';
+                popup.style.top = (coordinate[1] - 80) + 'px';
+            } else {
+                closePopup();
+            }
+        });
+
+        // Change cursor on hover
+        map.on('pointermove', function(evt) {
+            const pixel = map.getEventPixel(evt.originalEvent);
+            const feature = map.forEachFeatureAtPixel(pixel, function(feature) {
+                return feature;
+            });
+            map.getTarget().style.cursor = feature && feature.get('poiLat') ? 'pointer' : '';
+        });
+    }
+
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+
+    // Filter POI berdasarkan kategori
+    document.querySelectorAll('.poi-category').forEach(el => {
+        el.addEventListener('click', function() {
+            const category = this.dataset.category;
+            console.log('Filter by category:', category);
+            // Bisa ditambahkan logika filter di sini
+        });
+    });
+
+    // ============================================
+    // STARTUP
+    // ============================================
+    
+    // Tunggu DOM ready, kemudian tunggu map dari qgis2web
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => initializeMap(), 500);
+        });
+    } else {
+        setTimeout(() => initializeMap(), 500);
+    }
+    </script>
+</body>
+</html>
